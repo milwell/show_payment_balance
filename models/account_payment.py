@@ -63,3 +63,5 @@ class AccountPayment(models.Model):
                             payment.applied_state = 'full'
                 else:
                     payment.applied_state = 'unapplied'
+            else:
+                payment.amount_residual_company = 0
