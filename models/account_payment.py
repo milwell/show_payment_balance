@@ -6,14 +6,17 @@ class AccountPayment(models.Model):
     _inherit = 'account.payment'
 
     applied_state = fields.Selection(selection=[('unapplied', 'Unapplied'),('partial', 'Partial'),('full', 'Full')],
-        string='Applied', store=True, readonly=True, copy=False, tracking=True, compute='_compute_amount')
+        string='Applied', store=True, readonly=True, copy=False, tracking=True, compute='_compute_amount'
+    )
 
     company_currency_id = fields.Many2one(related='company_id.currency_id', string='Company Currency',
         readonly=True, store=True,
-        help='Utility field to express amount currency')       
+        help='Utility field to express amount currency'
+    )       
 
     # # === Amount fields ===
-    amount_residual = fields.Monetary(string='To Apply', store=True,compute='_compute_amount')
+    amount_residual = fields.Monetary(string='To Apply', store=True, compute='_compute_amount', currency_field = 'company_currency_id')
+    amount_residual_currency = fields.Monetary(string='To Apply', store=True, compute='_compute_amount')
 
     @api.depends(
         'state',
@@ -25,26 +28,26 @@ class AccountPayment(models.Model):
         for payment in self:
             if not payment.state in ['draft','cancelled']:
                 total_residual = 0.0
+                total_residual_currency = 0.0
                 currencies = set()
                 for line in payment.move_line_ids:
-                    if line.currency_id:
-                        currencies.add(line.currency_id)
-
                     if line.account_id.user_type_id.type in ('receivable', 'payable'):
-                        # Residual amount.
                         total_residual += line.amount_residual
-                
+                        total_residual_currency += line.amount_residual_currency
 
+                payment.amount_residual = abs(total_residual)
+                payment.amount_residual_currency = abs(total_residual_currency)
 
-                payment.amount_residual = total_residual
-
-                currency = len(currencies) == 1 and currencies.pop() or payment.company_id.currency_id
-                is_applied = currency and currency.is_zero(payment.amount_residual) or not payment.amount_residual
-
-                if payment.state == 'posted' and is_applied:
-                    if payment.amount_residual > 0:
-                        payment.applied_state = 'partial'
+                if payment.state == 'posted':
+                    if payment.currency_id != payment.company_currency_id:
+                        if payment.amount > payment.amount_residual_currency:
+                            payment.applied_state = 'partial'
+                        else:
+                            payment.applied_state = 'full'
                     else:
-                        payment.applied_state = 'full'
+                        if payment.amount > payment.amount_residual:
+                            payment.applied_state = 'partial'
+                        else:
+                            payment.applied_state = 'full'
                 else:
                     payment.applied_state = 'unapplied'

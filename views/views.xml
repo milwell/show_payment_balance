@@ -6,7 +6,9 @@
       <field name="model">account.payment</field>
       <field name="arch" type="xml">
         <field name="communication" position="after">
-          <field name="amount_residual"/>
+          <field name='company_currency_id' invisible="1"/>
+          <field name="amount_residual" attrs="{'invisible':['|','|',('state','=','draft'),('payment_type','=','transfer'),('currency_id','!=','company_currency_id')]}"/>
+          <field name="amount_residual_currency" attrs="{'invisible':['|','|',('state','=','draft'),('payment_type','=','transfer'),('currency_id','=','company_currency_id')]}"/>
         </field>
       </field>
     </record>
