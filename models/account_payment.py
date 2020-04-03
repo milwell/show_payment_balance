@@ -12,11 +12,22 @@ class AccountPayment(models.Model):
     company_currency_id = fields.Many2one(related='company_id.currency_id', string='Company Currency',
         readonly=True, store=True,
         help='Utility field to express amount currency'
-    )       
+    )
+    is_company_currency = fields.Boolean(compute="_is_company_currency")
 
     # # === Amount fields ===
     amount_residual = fields.Monetary(string='To Apply', store=True, compute='_compute_amount', currency_field = 'company_currency_id')
+    amount_residual_company = fields.Monetary(string='To Apply (Company)', compute='_compute_amount', currency_field = 'company_currency_id')
     amount_residual_currency = fields.Monetary(string='To Apply', store=True, compute='_compute_amount')
+
+
+    @api.depends('company_currency_id')
+    def _is_company_currency(self):
+        for p in self:
+            if p.currency_id == False:
+                p.is_company_currency = True
+            else:
+                p.is_company_currency = p.company_currency_id == p.currency_id
 
     @api.depends(
         'state',
@@ -37,6 +48,7 @@ class AccountPayment(models.Model):
 
                 payment.amount_residual = abs(total_residual)
                 payment.amount_residual_currency = abs(total_residual_currency)
+                payment.amount_residual_company = payment.amount_residual
 
                 if payment.state == 'posted':
                     if payment.currency_id != payment.company_currency_id:
