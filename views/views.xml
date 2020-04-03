@@ -14,5 +14,16 @@
       </field>
     </record>
 
+    <record model="ir.ui.view" id="view_account_payment_tree">
+      <field name="inherit_id" ref="account.view_account_payment_tree"/>
+      <field name="model">account.payment</field>
+      <field name="arch" type="xml">
+        <field name="amount" position="after">
+          <field name="amount_residual_currency" string="To Apply FX" groups="base.group_multi_currency"/>
+          <field name="amount_residual" sum="To Apply"/>
+        </field>
+      </field>
+    </record>
+
   </data>
 </odoo>
