@@ -37,12 +37,15 @@ class AccountPayment(models.Model):
     def _compute_amount(self):
         # invoice_ids = [move.id for move in self if move.id and move.is_invoice(include_receipts=True)]
         for payment in self:
+            payment.amount_residual_company = 0
+            payment.total_residual = 0.0
+            payment.total_residual_currency = 0.0
             if not payment.state in ['draft','cancelled']:
                 total_residual = 0.0
                 total_residual_currency = 0.0
                 currencies = set()
                 for line in payment.move_line_ids:
-                    if line.account_id.user_type_id.type in ('receivable', 'payable'):
+                    if line.account_id.user_type_id.type in ('receivable', 'payable') and line.move_id.state == 'posted':
                         total_residual += line.amount_residual
                         total_residual_currency += line.amount_residual_currency
 
@@ -63,5 +66,3 @@ class AccountPayment(models.Model):
                             payment.applied_state = 'full'
                 else:
                     payment.applied_state = 'unapplied'
-            else:
-                payment.amount_residual_company = 0
