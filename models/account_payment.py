@@ -21,7 +21,7 @@ class AccountPayment(models.Model):
     amount_residual_currency = fields.Monetary(string='To Apply', store=True, compute='_compute_amount')
 
 
-    @api.depends('company_currency_id')
+    @api.depends('company_currency_id','currency_id')
     def _is_company_currency(self):
         for p in self:
             if p.currency_id == False:
